@@ -207,6 +207,56 @@
     .type-card.active .type-card-price { color: var(--blue); }
     .type-card.active .type-card-formula { color: rgba(0,82,255,0.45); }
 
+    .type-card-footer {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .type-card.active .type-card-footer { border-top-color: rgba(0,82,255,0.1); }
+
+    .counter-label { font-size: 10px; font-weight: 600; color: #b0b7c3; }
+    .type-card.active .counter-label { color: rgba(0,82,255,0.45); }
+
+    .counter-wrap { display: flex; align-items: center; gap: 8px; }
+
+    .counter-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: white;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--near-black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .counter-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .counter-btn:active { transform: scale(0.9); }
+    .type-card.active .counter-btn { border-color: rgba(0,82,255,0.2); }
+    .type-card.active .counter-btn:hover { border-color: var(--blue); background: rgba(0,82,255,0.06); }
+
+    .counter-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--near-black);
+      min-width: 20px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .type-card.active .counter-val { color: var(--blue); }
+
     /* ── DIVIDER ── */
     .divider {
       height: 1px;
@@ -287,6 +337,7 @@
       max-width: 430px;
       background: var(--near-black);
       border-top: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 -16px 40px rgba(0,0,0,0.22);
       padding: 18px 24px max(28px, env(safe-area-inset-bottom, 0px) + 14px);
       z-index: 999;
     }
@@ -363,18 +414,34 @@
   <div class="section" style="margin-top: 28px">
     <div class="section-label">我的飲食類型</div>
     <div class="type-grid">
-      <button class="type-card active" id="btn-veg" onclick="selectType('veg')">
+      <div class="type-card active" id="btn-veg" onclick="selectType('veg')">
         <div class="radio-ring"><div class="radio-dot"></div></div>
         <div class="type-card-name">蔬食</div>
-        <div class="type-card-formula">1,760 ÷ 8 人</div>
-        <div class="type-card-price">$220</div>
-      </button>
-      <button class="type-card" id="btn-meat" onclick="selectType('meat')">
+        <div class="type-card-formula" id="formula-veg">1,760 ÷ 8 人</div>
+        <div class="type-card-price" id="price-veg">$220</div>
+        <div class="type-card-footer">
+          <span class="counter-label">人數</span>
+          <div class="counter-wrap">
+            <button class="counter-btn" onclick="adjustCount('veg',-1,event)">−</button>
+            <span class="counter-val" id="count-veg">1</span>
+            <button class="counter-btn" onclick="adjustCount('veg',1,event)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="type-card" id="btn-meat" onclick="selectType('meat')">
         <div class="radio-ring"><div class="radio-dot"></div></div>
         <div class="type-card-name">葷食 + 蔬食</div>
-        <div class="type-card-formula">(2,938 + 1,540) ÷ 7 人</div>
-        <div class="type-card-price">$640</div>
-      </button>
+        <div class="type-card-formula" id="formula-meat">(2,938+1,540) ÷ 7 人</div>
+        <div class="type-card-price" id="price-meat">$640</div>
+        <div class="type-card-footer">
+          <span class="counter-label">人數</span>
+          <div class="counter-wrap">
+            <button class="counter-btn" onclick="adjustCount('meat',-1,event)">−</button>
+            <span class="counter-val" id="count-meat">1</span>
+            <button class="counter-btn" onclick="adjustCount('meat',1,event)">+</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -411,9 +478,43 @@
     { name: '柚子啤酒',    price: 198 },
   ];
 
-  let dietType = 'veg';
-  let dietCost = 220;
+  const VEG_BASE  = 220;
+  const MEAT_BASE = 640;
+
+  let dietType   = 'veg';
+  let vegPeople  = 1;
+  let meatPeople = 1;
   const selected = new Set();
+
+  function recalcCards() {
+    const vTotal = VEG_BASE  * vegPeople;
+    const mTotal = MEAT_BASE * meatPeople;
+
+    document.getElementById('price-veg').textContent  = '$' + vTotal.toLocaleString();
+    document.getElementById('price-meat').textContent = '$' + mTotal.toLocaleString();
+
+    document.getElementById('formula-veg').textContent  = vegPeople  === 1
+      ? '1,760 ÷ 8 人'
+      : '$220 × ' + vegPeople  + ' 人';
+
+    document.getElementById('formula-meat').textContent = meatPeople === 1
+      ? '(2,938+1,540) ÷ 7 人'
+      : '$640 × ' + meatPeople + ' 人';
+
+    update();
+  }
+
+  function adjustCount(type, delta, event) {
+    event.stopPropagation();
+    if (type === 'veg') {
+      vegPeople  = Math.max(1, vegPeople  + delta);
+      document.getElementById('count-veg').textContent  = vegPeople;
+    } else {
+      meatPeople = Math.max(1, meatPeople + delta);
+      document.getElementById('count-meat').textContent = meatPeople;
+    }
+    recalcCards();
+  }
 
   /* Render drink rows */
   const list = document.getElementById('drinks-list');
@@ -441,29 +542,32 @@
 
   function selectType(t) {
     dietType = t;
-    dietCost = t === 'veg' ? 220 : 640;
-    document.getElementById('btn-veg').classList.toggle('active', t === 'veg');
+    document.getElementById('btn-veg').classList.toggle('active',  t === 'veg');
     document.getElementById('btn-meat').classList.toggle('active', t === 'meat');
     update();
   }
 
   function update() {
+    const base     = dietType === 'veg' ? VEG_BASE  : MEAT_BASE;
+    const people   = dietType === 'veg' ? vegPeople : meatPeople;
+    const dietCost = base * people;
+
     let drinkSum = 0;
     const drinkLines = [];
     selected.forEach(i => {
       drinkSum += DRINKS[i].price;
       drinkLines.push(DRINKS[i].name + '  $' + DRINKS[i].price);
     });
+
     const grand = dietCost + drinkSum;
     const label = dietType === 'veg' ? '蔬食' : '葷食+蔬食';
+    const pLabel = people > 1 ? ' × ' + people + ' 人' : '';
 
-    let bd = '飲食（' + label + '）$' + dietCost;
+    let bd = '飲食（' + label + '）$' + base + pLabel;
     if (drinkLines.length) bd += '\n' + drinkLines.join('、');
 
     document.getElementById('breakdown').innerText = bd;
-
-    const totalEl = document.getElementById('total');
-    totalEl.textContent = '$' + grand.toLocaleString();
+    document.getElementById('total').textContent   = '$' + grand.toLocaleString();
   }
 
   update();
