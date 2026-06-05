@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>聚餐分帳</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #0052ff;
+      --blue-hover: #578bfa;
+      --near-black: #0a0b0d;
+      --dark-card: #282b31;
+      --surface: #eef0f3;
+      --muted: #5b616e;
+      --border: rgba(91, 97, 110, 0.18);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #eef0f3;
+      color: var(--near-black);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 430px;
+      margin: 0 auto;
+      background: #ffffff;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 120px;
+    }
+
+    /* ── DARK HEADER ── */
+    .header {
+      background: var(--near-black);
+      padding: max(52px, env(safe-area-inset-top, 0px) + 24px) 24px 32px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 20px;
+    }
+
+    .total-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 4px;
+    }
+
+    .total-amount {
+      font-size: 56px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 1.0;
+      margin-bottom: 28px;
+    }
+
+    .bill-table {
+      background: rgba(255,255,255,0.07);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .bill-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+    }
+
+    .bill-row + .bill-row {
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .bill-row-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-meat  { background: #ff6b4a; }
+    .dot-veg   { background: #00d68f; }
+    .dot-drink { background: var(--blue-hover); }
+
+    .bill-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); }
+    .bill-value { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.88); font-variant-numeric: tabular-nums; }
+
+    /* ── SECTIONS ── */
+    .section { padding: 0 20px; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #9da3ae;
+      margin-bottom: 12px;
+    }
+
+    /* ── TYPE CARDS ── */
+    .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .type-card {
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 13px 14px;
+      cursor: pointer;
+      background: white;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+      width: 100%;
+      position: relative;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .type-card:hover  { border-color: rgba(0,82,255,0.35); }
+    .type-card:active { background: rgba(0,82,255,0.03); }
+
+    .type-card.active {
+      border-color: var(--blue);
+      border-width: 2px;
+      background: rgba(0,82,255,0.04);
+    }
+
+    .radio-ring {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid #c8cdd6;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .radio-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .type-card.active .radio-ring {
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .type-card.active .radio-dot { opacity: 1; }
+
+    .type-card-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--near-black);
+      margin-bottom: 4px;
+      padding-right: 22px;
+      line-height: 1.3;
+    }
+
+    .type-card-formula {
+      font-size: 9.5px;
+      color: #b0b7c3;
+      font-weight: 600;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .type-card-price {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--near-black);
+      letter-spacing: -0.03em;
+    }
+
+    .type-card.active .type-card-name  { color: var(--blue); }
+    .type-card.active .type-card-price { color: var(--blue); }
+    .type-card.active .type-card-formula { color: rgba(0,82,255,0.45); }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: #f0f2f5;
+      margin: 24px 20px;
+    }
+
+    /* ── DRINKS ── */
+    .drinks-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .drink-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 16px;
+      cursor: pointer;
+      transition: background 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .drink-item + .drink-item {
+      border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .drink-item:active    { background: #f7f8fa; }
+    .drink-item.selected  { background: rgba(0,82,255,0.04); }
+
+    .drink-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drink-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid #c8cdd6;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .drink-item.selected .drink-checkbox {
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .check-svg {
+      opacity: 0;
+      transform: scale(0.4);
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .drink-item.selected .check-svg {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .drink-name  { font-size: 14px; font-weight: 500; color: var(--near-black); }
+    .drink-price { font-size: 14px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; transition: color 0.15s; }
+    .drink-item.selected .drink-price { color: var(--blue); }
+
+    /* ── STICKY TOTAL ── */
+    .sticky {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 14px 20px max(28px, env(safe-area-inset-bottom, 0px) + 14px);
+      z-index: 999;
+    }
+
+    .sticky-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .sticky-meta { flex: 1; margin-right: 12px; }
+
+    .sticky-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9da3ae;
+      margin-bottom: 4px;
+    }
+
+    .sticky-breakdown {
+      font-size: 11px;
+      font-weight: 500;
+      color: #9da3ae;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .sticky-total {
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--near-black);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+
+    .sticky-total.has-drinks { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── DARK HEADER ── -->
+  <div class="header">
+    <div class="eyebrow">聚餐分帳計算</div>
+    <div class="total-label">本次帳單總計</div>
+    <div class="total-amount">$6,057</div>
+    <div class="bill-table">
+      <div class="bill-row">
+        <div class="bill-row-left">
+          <div class="dot dot-meat"></div>
+          <span class="bill-label">葷食費用</span>
+        </div>
+        <span class="bill-value">$2,938</span>
+      </div>
+      <div class="bill-row">
+        <div class="bill-row-left">
+          <div class="dot dot-veg"></div>
+          <span class="bill-label">蔬食費用</span>
+        </div>
+        <span class="bill-value">$1,760</span>
+      </div>
+      <div class="bill-row">
+        <div class="bill-row-left">
+          <div class="dot dot-drink"></div>
+          <span class="bill-label">飲料費用</span>
+        </div>
+        <span class="bill-value">$1,359</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DIET TYPE ── -->
+  <div class="section" style="margin-top: 28px">
+    <div class="section-label">我的飲食類型</div>
+    <div class="type-grid">
+      <button class="type-card active" id="btn-veg" onclick="selectType('veg')">
+        <div class="radio-ring"><div class="radio-dot"></div></div>
+        <div class="type-card-name">蔬食</div>
+        <div class="type-card-formula">1,760 ÷ 8 人</div>
+        <div class="type-card-price">$220</div>
+      </button>
+      <button class="type-card" id="btn-meat" onclick="selectType('meat')">
+        <div class="radio-ring"><div class="radio-dot"></div></div>
+        <div class="type-card-name">葷食 + 蔬食</div>
+        <div class="type-card-formula">(2,938 + 1,540) ÷ 7 人</div>
+        <div class="type-card-price">$640</div>
+      </button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── DRINKS ── -->
+  <div class="section">
+    <div class="section-label">我的飲料</div>
+    <div class="drinks-card" id="drinks-list"></div>
+  </div>
+
+  <!-- ── STICKY TOTAL ── -->
+  <div class="sticky">
+    <div class="sticky-inner">
+      <div class="sticky-meta">
+        <div class="sticky-label">我應付</div>
+        <div class="sticky-breakdown" id="breakdown">飲食（蔬食）$220</div>
+      </div>
+      <div class="sticky-total" id="total">$220</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const DRINKS = [
+    { name: '可樂',        price: 72  },
+    { name: '王老吉',      price: 72  },
+    { name: '無糖綠茶',    price: 72  },
+    { name: '巨峰葡萄燒酒',price: 143 },
+    { name: 'Asahi 啤酒',  price: 176 },
+    { name: '惠比壽梅酒',  price: 198 },
+    { name: '柚子啤酒',    price: 198 },
+  ];
+
+  let dietType = 'veg';
+  let dietCost = 220;
+  const selected = new Set();
+
+  /* Render drink rows */
+  const list = document.getElementById('drinks-list');
+  DRINKS.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'drink-item';
+    el.id = 'di' + i;
+    el.innerHTML =
+      `<div class="drink-left">
+         <div class="drink-checkbox">
+           <svg class="check-svg" width="10" height="8" viewBox="0 0 10 8" fill="none">
+             <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>
+         </div>
+         <span class="drink-name">${d.name}</span>
+       </div>
+       <span class="drink-price">$${d.price}</span>`;
+    el.addEventListener('click', () => {
+      selected.has(i) ? selected.delete(i) : selected.add(i);
+      el.classList.toggle('selected', selected.has(i));
+      update();
+    });
+    list.appendChild(el);
+  });
+
+  function selectType(t) {
+    dietType = t;
+    dietCost = t === 'veg' ? 220 : 640;
+    document.getElementById('btn-veg').classList.toggle('active', t === 'veg');
+    document.getElementById('btn-meat').classList.toggle('active', t === 'meat');
+    update();
+  }
+
+  function update() {
+    let drinkSum = 0;
+    const drinkLines = [];
+    selected.forEach(i => {
+      drinkSum += DRINKS[i].price;
+      drinkLines.push(DRINKS[i].name + '  $' + DRINKS[i].price);
+    });
+    const grand = dietCost + drinkSum;
+    const label = dietType === 'veg' ? '蔬食' : '葷食+蔬食';
+
+    let bd = '飲食（' + label + '）$' + dietCost;
+    if (drinkLines.length) bd += '\n' + drinkLines.join('、');
+
+    document.getElementById('breakdown').innerText = bd;
+
+    const totalEl = document.getElementById('total');
+    totalEl.textContent = '$' + grand.toLocaleString();
+    totalEl.classList.toggle('has-drinks', drinkSum > 0);
+  }
+
+  update();
+</script>
+</body>
+</html>
