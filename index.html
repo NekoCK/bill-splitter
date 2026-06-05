@@ -285,9 +285,9 @@
       transform: translateX(-50%);
       width: 100%;
       max-width: 430px;
-      background: white;
-      border-top: 1px solid var(--border);
-      padding: 14px 20px max(28px, env(safe-area-inset-bottom, 0px) + 14px);
+      background: var(--near-black);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 18px 24px max(28px, env(safe-area-inset-bottom, 0px) + 14px);
       z-index: 999;
     }
 
@@ -303,15 +303,15 @@
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #9da3ae;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.35);
       margin-bottom: 4px;
     }
 
     .sticky-breakdown {
       font-size: 11px;
       font-weight: 500;
-      color: #9da3ae;
+      color: rgba(255,255,255,0.45);
       line-height: 1.6;
       white-space: pre-line;
     }
@@ -319,14 +319,11 @@
     .sticky-total {
       font-size: 38px;
       font-weight: 800;
-      color: var(--near-black);
+      color: #ffffff;
       letter-spacing: -0.03em;
       line-height: 1;
       flex-shrink: 0;
-      transition: color 0.2s;
     }
-
-    .sticky-total.has-drinks { color: var(--blue); }
   </style>
 </head>
 <body>
@@ -467,7 +464,6 @@
 
     const totalEl = document.getElementById('total');
     totalEl.textContent = '$' + grand.toLocaleString();
-    totalEl.classList.toggle('has-drinks', drinkSum > 0);
   }
 
   update();
